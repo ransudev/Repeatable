@@ -1,7 +1,7 @@
 use crate::core::scheduler::{next_loop, LoopMode};
 use crate::models::{EventKind, InputEvent, MouseButton};
 use enigo::{
-    Axis, Button as EnigoButton, Coordinate, Direction, Enigo, Key, Keyboard, Mouse, Settings,
+    Axis, Button as EnigoButton, Coordinate, Direction, Enigo, Keyboard, Mouse, Settings, EXT,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -137,13 +137,13 @@ fn dispatch_event(enigo: &mut Enigo, event: &InputEvent) {
             }
         }
         EventKind::KeyDown { key } => {
-            if let Some(key) = key_from_rdev_debug(key) {
-                let _ = enigo.key(key, Direction::Press);
+            if let Some(scancode) = key_to_scancode(key) {
+                let _ = enigo.raw(scancode, Direction::Press);
             }
         }
         EventKind::KeyUp { key } => {
-            if let Some(key) = key_from_rdev_debug(key) {
-                let _ = enigo.key(key, Direction::Release);
+            if let Some(scancode) = key_to_scancode(key) {
+                let _ = enigo.raw(scancode, Direction::Release);
             }
         }
     }
@@ -157,146 +157,112 @@ fn map_mouse_button(button: MouseButton) -> EnigoButton {
     }
 }
 
-fn key_from_rdev_debug(key: &str) -> Option<Key> {
+fn key_to_scancode(key: &str) -> Option<u16> {
     match key {
-        "Space" => Some(Key::Space),
-        "Tab" => Some(Key::Tab),
-        "Return" | "Enter" => Some(Key::Return),
-        "Escape" | "Esc" => Some(Key::Escape),
-        "Backspace" => Some(Key::Backspace),
-        "Delete" => Some(Key::Delete),
-        "LeftArrow" | "ArrowLeft" => Some(Key::LeftArrow),
-        "RightArrow" | "ArrowRight" => Some(Key::RightArrow),
-        "UpArrow" | "ArrowUp" => Some(Key::UpArrow),
-        "DownArrow" | "ArrowDown" => Some(Key::DownArrow),
-        "Home" => Some(Key::Home),
-        "End" => Some(Key::End),
-        "PageUp" => Some(Key::PageUp),
-        "PageDown" => Some(Key::PageDown),
-        "F1" => Some(Key::F1),
-        "F2" => Some(Key::F2),
-        "F3" => Some(Key::F3),
-        "F4" => Some(Key::F4),
-        "F5" => Some(Key::F5),
-        "F6" => Some(Key::F6),
-        "F7" => Some(Key::F7),
-        "F8" => Some(Key::F8),
-        "F9" => Some(Key::F9),
-        "F10" => Some(Key::F10),
-        "F11" => Some(Key::F11),
-        "F12" => Some(Key::F12),
-        "Insert" => Some(Key::Insert),
-        "CapsLock" => Some(Key::CapsLock),
-        "PrintScreen" => Some(Key::Print),
-        "ScrollLock" => Some(Key::Scroll),
-        "Pause" => Some(Key::Pause),
-        "NumLock" => Some(Key::Numlock),
-        "ControlLeft" => Some(Key::LControl),
-        "ControlRight" => Some(Key::RControl),
-        "Control" => Some(Key::Control),
-        "ShiftLeft" => Some(Key::LShift),
-        "ShiftRight" => Some(Key::RShift),
-        "Shift" => Some(Key::Shift),
-        "Alt" | "AltGr" => Some(Key::Alt),
-        "MetaLeft" => Some(Key::LWin),
-        "MetaRight" => Some(Key::RWin),
-        "Meta" => Some(Key::Meta),
-        "Minus" => Some(Key::OEMMinus),
-        "Equal" => Some(Key::OEMPlus),
-        "LeftBracket" => Some(Key::OEM4),
-        "RightBracket" => Some(Key::OEM6),
-        "BackSlash" | "Backslash" => Some(Key::OEM5),
-        "IntlBackslash" => Some(Key::OEM102),
-        "SemiColon" | "Semicolon" => Some(Key::OEM1),
-        "Quote" => Some(Key::OEM7),
-        "Comma" => Some(Key::OEMComma),
-        "Dot" | "Period" => Some(Key::OEMPeriod),
-        "Slash" => Some(Key::OEM2),
-        "Grave" | "BackQuote" => Some(Key::OEM3),
-        "KpPlus" => Some(Key::Add),
-        "KpMinus" => Some(Key::Subtract),
-        "KpMultiply" => Some(Key::Multiply),
-        "KpDivide" => Some(Key::Divide),
-        "KpDelete" => Some(Key::Decimal),
-        "KpReturn" => Some(Key::Return),
-        _ => letter_or_digit_key(key),
+        "Escape" | "Esc" => Some(0x01),
+        "Num1" => Some(0x02),
+        "Num2" => Some(0x03),
+        "Num3" => Some(0x04),
+        "Num4" => Some(0x05),
+        "Num5" => Some(0x06),
+        "Num6" => Some(0x07),
+        "Num7" => Some(0x08),
+        "Num8" => Some(0x09),
+        "Num9" => Some(0x0A),
+        "Num0" => Some(0x0B),
+        "Minus" => Some(0x0C),
+        "Equal" => Some(0x0D),
+        "Backspace" => Some(0x0E),
+        "Tab" => Some(0x0F),
+        "KeyQ" => Some(0x10),
+        "KeyW" => Some(0x11),
+        "KeyE" => Some(0x12),
+        "KeyR" => Some(0x13),
+        "KeyT" => Some(0x14),
+        "KeyY" => Some(0x15),
+        "KeyU" => Some(0x16),
+        "KeyI" => Some(0x17),
+        "KeyO" => Some(0x18),
+        "KeyP" => Some(0x19),
+        "LeftBracket" => Some(0x1A),
+        "RightBracket" => Some(0x1B),
+        "Return" | "Enter" => Some(0x1C),
+        "ControlLeft" | "Control" => Some(0x1D),
+        "KeyA" => Some(0x1E),
+        "KeyS" => Some(0x1F),
+        "KeyD" => Some(0x20),
+        "KeyF" => Some(0x21),
+        "KeyG" => Some(0x22),
+        "KeyH" => Some(0x23),
+        "KeyJ" => Some(0x24),
+        "KeyK" => Some(0x25),
+        "KeyL" => Some(0x26),
+        "SemiColon" | "Semicolon" => Some(0x27),
+        "Quote" => Some(0x28),
+        "Grave" | "BackQuote" => Some(0x29),
+        "ShiftLeft" | "Shift" => Some(0x2A),
+        "BackSlash" | "Backslash" => Some(0x2B),
+        "KeyZ" => Some(0x2C),
+        "KeyX" => Some(0x2D),
+        "KeyC" => Some(0x2E),
+        "KeyV" => Some(0x2F),
+        "KeyB" => Some(0x30),
+        "KeyN" => Some(0x31),
+        "KeyM" => Some(0x32),
+        "Comma" => Some(0x33),
+        "Dot" | "Period" => Some(0x34),
+        "Slash" => Some(0x35),
+        "ShiftRight" => Some(0x36),
+        "KpMultiply" => Some(0x37),
+        "Alt" => Some(0x38),
+        "Space" => Some(0x39),
+        "CapsLock" => Some(0x3A),
+        "F1" => Some(0x3B),
+        "F2" => Some(0x3C),
+        "F3" => Some(0x3D),
+        "F4" => Some(0x3E),
+        "F5" => Some(0x3F),
+        "F6" => Some(0x40),
+        "F7" => Some(0x41),
+        "F8" => Some(0x42),
+        "F9" => Some(0x43),
+        "F10" => Some(0x44),
+        "NumLock" => Some(0x45),
+        "ScrollLock" => Some(0x46),
+        "Kp7" => Some(0x47),
+        "Kp8" => Some(0x48),
+        "Kp9" => Some(0x49),
+        "KpMinus" => Some(0x4A),
+        "Kp4" => Some(0x4B),
+        "Kp5" => Some(0x4C),
+        "Kp6" => Some(0x4D),
+        "KpPlus" => Some(0x4E),
+        "Kp1" => Some(0x4F),
+        "Kp2" => Some(0x50),
+        "Kp3" => Some(0x51),
+        "Kp0" => Some(0x52),
+        "KpDelete" => Some(0x53),
+        "IntlBackslash" => Some(0x56),
+        "F11" => Some(0x57),
+        "F12" => Some(0x58),
+        "KpReturn" => Some(0x1C | EXT),
+        "ControlRight" => Some(0x1D | EXT),
+        "KpDivide" => Some(0x35 | EXT),
+        "PrintScreen" => Some(0x37 | EXT),
+        "AltGr" => Some(0x38 | EXT),
+        "Home" => Some(0x47 | EXT),
+        "UpArrow" | "ArrowUp" => Some(0x48 | EXT),
+        "PageUp" => Some(0x49 | EXT),
+        "LeftArrow" | "ArrowLeft" => Some(0x4B | EXT),
+        "RightArrow" | "ArrowRight" => Some(0x4D | EXT),
+        "End" => Some(0x4F | EXT),
+        "DownArrow" | "ArrowDown" => Some(0x50 | EXT),
+        "PageDown" => Some(0x51 | EXT),
+        "Insert" => Some(0x52 | EXT),
+        "Delete" => Some(0x53 | EXT),
+        "MetaLeft" | "Meta" => Some(0x5B | EXT),
+        "MetaRight" => Some(0x5C | EXT),
+        "Pause" => Some(0x45 | EXT),
+        _ => None,
     }
-}
-
-fn letter_or_digit_key(key: &str) -> Option<Key> {
-    if let Some(letter) = key.strip_prefix("Key") {
-        if letter.len() == 1 {
-            return match letter.chars().next()?.to_ascii_uppercase() {
-                'A' => Some(Key::A),
-                'B' => Some(Key::B),
-                'C' => Some(Key::C),
-                'D' => Some(Key::D),
-                'E' => Some(Key::E),
-                'F' => Some(Key::F),
-                'G' => Some(Key::G),
-                'H' => Some(Key::H),
-                'I' => Some(Key::I),
-                'J' => Some(Key::J),
-                'K' => Some(Key::K),
-                'L' => Some(Key::L),
-                'M' => Some(Key::M),
-                'N' => Some(Key::N),
-                'O' => Some(Key::O),
-                'P' => Some(Key::P),
-                'Q' => Some(Key::Q),
-                'R' => Some(Key::R),
-                'S' => Some(Key::S),
-                'T' => Some(Key::T),
-                'U' => Some(Key::U),
-                'V' => Some(Key::V),
-                'W' => Some(Key::W),
-                'X' => Some(Key::X),
-                'Y' => Some(Key::Y),
-                'Z' => Some(Key::Z),
-                _ => None,
-            };
-        }
-    }
-
-    if let Some(digit) = key.strip_prefix("Num") {
-        if digit.len() == 1 && digit.chars().all(|ch| ch.is_ascii_digit()) {
-            return match digit.chars().next()? {
-                '0' => Some(Key::Num0),
-                '1' => Some(Key::Num1),
-                '2' => Some(Key::Num2),
-                '3' => Some(Key::Num3),
-                '4' => Some(Key::Num4),
-                '5' => Some(Key::Num5),
-                '6' => Some(Key::Num6),
-                '7' => Some(Key::Num7),
-                '8' => Some(Key::Num8),
-                '9' => Some(Key::Num9),
-                _ => None,
-            };
-        }
-    }
-
-    if let Some(digit) = key.strip_prefix("Kp") {
-        if digit.len() == 1 && digit.chars().all(|ch| ch.is_ascii_digit()) {
-            return match digit.chars().next()? {
-                '0' => Some(Key::Numpad0),
-                '1' => Some(Key::Numpad1),
-                '2' => Some(Key::Numpad2),
-                '3' => Some(Key::Numpad3),
-                '4' => Some(Key::Numpad4),
-                '5' => Some(Key::Numpad5),
-                '6' => Some(Key::Numpad6),
-                '7' => Some(Key::Numpad7),
-                '8' => Some(Key::Numpad8),
-                '9' => Some(Key::Numpad9),
-                _ => None,
-            };
-        }
-    }
-
-    if key.len() == 1 {
-        return key.chars().next().map(Key::Unicode);
-    }
-
-    None
 }
